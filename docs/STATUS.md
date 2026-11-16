@@ -305,6 +305,26 @@ M1 会切到 SQLite（`%APPDATA%\com.tooltime.pomodoro\data.db`），导出格�
 
 ---
 
+## 改进 v2：心情权重 / 开心度 / 日记归档（2026-11-17）
+
+设计文档：`docs/改进计划-v2.md`。三个 agent 并行（数据层 / 开心度 UI / 日记与撤销）+ 主线程接线。
+
+- **每次专注记心情**：`FocusSession.moodAfter`；结束面板写 session，当日心情缺失时才补写 `day_entry.mood`
+- **开心度**：`h = Σ(score×weight)/Σweight`，`score` 为 -1…+1，`weight = clamp(分钟/25, 0.5, 2)`；`index = round((h+1)×50)`
+  - `happinessOfDay / happinessRange / happinessAverage / happinessLastDays` 在 `selectors.ts`
+- **仪表盘**：0→目标值 800ms 滚动、弧线 900ms 绘制、变值 420ms 光晕；无数据显示「—」
+- **趋势图**：14 天折线 + 面积，null 断点，600ms 描线 + 点位 stagger
+- **日记双态**：draft ↔ archived（完成并归档 / 继续编辑），档案态只读排版 + 导出 .md
+- **日记库**：`/journal/library`，筛选（全部/已归档/草稿/有心情）、搜索、多选删除
+- **撤销**：`UndoProvider` + `useUndo().push(...)`，6 秒内可撤销（日记删除、单条专注删除）
+- **数据整理**：设置页按范围清空（近 7 天 / 本月 / 全部），需输入「删除」确认
+- **SQLite v2 迁移**：`002_mood_archive.sql`，纯 `ALTER TABLE ADD COLUMN`，旧库可直接升级
+
+验证：`tsc --noEmit`、`vite build` 通过；CDP 实测 3 条专注（心情 5/3/1）→ 开心度 **50**「平稳」「基于 3 次记录」。
+截图：`design/preview/today.png`、`stats.png`、`library.png`、`settings.png`。
+
+---
+
 ## 移除演示数据（2026-11-16）
 
 之前为了"日历不空"，首次启动会生成 21 天的假番茄、心情和两篇假日记。现在全部去掉：
