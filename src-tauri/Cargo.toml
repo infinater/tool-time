@@ -1,8 +1,9 @@
 [package]
 name = "tool-time"
 version = "0.1.0"
+license = "MIT"
 description = "番茄日历：专注、心情、日记"
-authors = ["tool-time"]
+authors = ["infinater"]
 edition = "2021"
 rust-version = "1.77"
 

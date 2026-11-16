@@ -106,18 +106,22 @@ docs/                     # 设计文档
 - **Markdown 是唯一真相**：日记存储为纯字符串，预览只读渲染，将来换 CodeMirror/Milkdown 不影响数据。
 - **不做强制打卡**：结束面板「跳过」永远可见，空状态文案中性。
 
-## 下一步（M1）
+## 下一步（M2）
 
-1. 把数据层从 localStorage 换成 Tauri SQLite（表结构见设计文档 §7.2），保留导出格式。
-2. Rust 侧计时器命令（`start_timer/pause/resume/tick 事件`），避免窗口隐藏时 WebView 节流。
-3. 托盘图标 + 菜单、全局快捷键 `Ctrl+Alt+P`、关闭到托盘。
-4. Windows Toast 通知 + 安装版 AUMID。
-5. 迷你置顶窗（320×120）。
+M1 已完成（托盘、全局快捷键、Windows 通知、SQLite 持久化）。接下来：
+
+1. 任务拖拽排序、周视图
+2. 统计报表（心情趋势、标签分布、周报/年报）
+3. 日记全文搜索（SQLite FTS5）
+4. 自动更新（`tauri-plugin-updater`）
 
 ## 已知限制
 
 - 未做多设备同步（按设计 v1 明确不做）。
-- 统计页只有基础汇总，图表在 M4。
+- 统计页只有基础汇总，趋势报表在后续版本。
 - 打包未签名，SmartScreen 可能提示。
-- **桌面窗口尚未实机验证**：开发环境无法创建 GUI 进程（`notepad.exe` 也起不来），`tool-time.exe` 在此环境启动会报 `os error 5`。请在自己的桌面会话里用 `start.cmd` 选 2 验证。
 - 未安装的绿色版可能收不到 Toast（Windows 需要 AUMID，安装版更稳）。
+
+## 许可证
+
+[MIT](LICENSE) © 2026 infinater
