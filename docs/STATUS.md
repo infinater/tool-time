@@ -261,7 +261,7 @@ M1 会切到 SQLite（`%APPDATA%\com.tooltime.pomodoro\data.db`），导出格�
 
 用户实机运行后同样报 `os error 5`，继续定位到真实原因：
 
-- 手动建窗并打印错误后得到 `create_dir_all('C:\Users\Administrator\AppData\Local\com.tooltime.pomodoro\WebView2') -> Access denied`
+- 手动建窗并打印错误后得到 `create_dir_all('%LOCALAPPDATA%\com.tooltime.pomodoro\WebView2') -> Access denied`
 - 进一步探测：该进程对 `%LOCALAPPDATA%` 和 `%TEMP%` 都写不进去，但能写工作区
 - 结论：**WebView2 需要一个可写的数据目录**，默认位置不可写时窗口创建直接失败（`0x8000FFFF 灾难性故障`）
 
