@@ -1,0 +1,29 @@
+# 依赖与构建产物
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# 本地环境与调试产物
+.cargo/config.toml
+.shots/
+.scripts/
+.webview2/
+.appdata/
+*.log
+
+# 运行时数据（SQLite / WebView2 profile / 导出的备份）
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.local
+
+# TypeScript ����������Ϣ
+*.tsbuildinfo

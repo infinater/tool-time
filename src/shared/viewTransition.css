@@ -1,0 +1,77 @@
+/*
+ * View Transitions 通用层（不包含任何具体页面样式）。
+ * 用法：
+ *   :root[data-vt~="calendar"] ::view-transition-group(day-card) { ... }
+ */
+
+:root {
+  --vt-duration-enter: 220ms;
+  --vt-duration-exit: 160ms;
+  --vt-ease: var(--ease-out-quint, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 所有命名元素的默认时序；不改变 UA 的淡入淡出，只统一时长与曲线 */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--vt-duration-enter);
+  animation-timing-function: var(--vt-ease);
+}
+
+::view-transition-old(*) {
+  animation-duration: var(--vt-duration-exit);
+}
+
+/*
+ * 共享元素（日历格子 → 当日详情）的通用兜底。
+ * 说明：View Transition 的名称选择器暂不支持 `*-card` 这种后缀 glob，
+ * 所以用 view-transition-class 给命名的元素分组；名称仍由 --vt-name 提供。
+ */
+.vt-card {
+  view-transition-name: var(--vt-name, none);
+  view-transition-class: vt-card;
+}
+
+::view-transition-group(.vt-card) {
+  animation-duration: var(--vt-duration-enter);
+  animation-timing-function: var(--vt-ease);
+}
+
+/* 路由切换：根快照只做淡入淡出，不做横向滑动 */
+::view-transition-old(root) {
+  animation: vt-fade-out var(--vt-duration-exit) var(--vt-ease) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-fade-in var(--vt-duration-enter) var(--vt-ease) both;
+}
+
+/* 降低动效：彻底关闭所有 view-transition 动画 */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

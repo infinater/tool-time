@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>番茄日历 · 风格试样</title>
+    <style>
+      :root {
+        --bg: #0d0e11;
+        --n1: #131519;
+        --n2: #191c21;
+        --n3: #22262d;
+        --n4: #2c313a;
+        --n6: #5b636f;
+        --n7: #8b939f;
+        --n9: #dfe3e9;
+        --n10: #f2f3f5;
+        --accent: #e8674c;
+        --accent-weak: #2a1a16;
+        --accent-text: #ff9a82;
+        --heat0: #191c21;
+        --heat1: #3a2320;
+        --heat2: #5c2f28;
+        --heat3: #8a3f31;
+        --radius-card: 14px;
+        --serif: "LXGW WenKai", Georgia, "Songti SC", "SimSun", serif;
+        --sans: Inter, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+        --mono: ui-monospace, "JetBrains Mono", Consolas, monospace;
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      /* 方向 B：纸感编辑 */
+      body[data-theme="b"] {
+        --bg: #100f0d;
+        --n1: #17150f;
+        --n2: #1e1b15;
+        --n3: #272319;
+        --n4: #322c20;
+        --n7: #9a9184;
+        --n9: #e6dfd2;
+        --n10: #f5efe3;
+        --accent: #d9644a;
+        --accent-weak: #2b1c15;
+        --radius-card: 8px;
+        --heat0: #1e1b15;
+        --heat1: #3d2a1f;
+        --heat2: #6a3a26;
+        --heat3: #94482f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--n9);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        transition: background 260ms var(--ease), color 260ms var(--ease);
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 56px 40px 96px;
+      }
+
+      .eyebrow {
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--n6);
+        font-weight: 500;
+      }
+      h1 {
+        margin: 10px 0 0;
+        font-size: 34px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        font-weight: 600;
+        color: var(--n10);
+      }
+      body[data-theme="b"] h1,
+      body[data-theme="b"] .h2,
+      body[data-theme="b"] .display {
+        font-family: var(--serif);
+        letter-spacing: 0;
+      }
+      .lede {
+        margin: 12px 0 0;
+        max-width: 58ch;
+        font-size: 15px;
+        line-height: 1.75;
+        color: var(--n7);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--n3);
+      }
+      .switch {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 12px;
+        background: var(--n1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+      .switch button {
+        border: 0;
+        cursor: pointer;
+        background: transparent;
+        color: var(--n7);
+        font: inherit;
+        font-size: 12.5px;
+        padding: 7px 14px;
+        border-radius: 9px;
+        transition: background 120ms var(--ease), color 120ms;
+      }
+      .switch button[aria-pressed="true"] {
+        background: var(--n3);
+        color: var(--n10);
+      }
+
+      section {
+        margin-top: 48px;
+      }
+      .h2 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--n10);
+        margin: 0 0 4px;
+      }
+      .hint {
+        font-size: 12.5px;
+        color: var(--n6);
+        margin: 0 0 20px;
+      }
+
+      /* ---------- 色板 ---------- */
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 6px;
+      }
+      .sw {
+        height: 56px;
+        border-radius: 8px;
+        position: relative;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      }
+      .sw span {
+        position: absolute;
+        bottom: -18px;
+        left: 0;
+        font-size: 10px;
+        color: var(--n6);
+        font-family: var(--mono);
+      }
+      .heatrow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-top: 40px;
+        max-width: 420px;
+      }
+      .heatrow .sw {
+        height: 44px;
+      }
+
+      /* ---------- 字号 ---------- */
+      .type-row {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        align-items: baseline;
+        gap: 20px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--n2);
+      }
+      .type-row .tag {
+        font-size: 11px;
+        color: var(--n6);
+        font-family: var(--mono);
+      }
+      .t-display {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--n10);
+      }
+      .t-h2 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--n10);
+      }
+      .t-h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--n10);
+      }
+      .t-body {
+        font-size: 15px;
+        line-height: 1.75;
+        color: var(--n9);
+      }
+      .t-s {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--n7);
+      }
+      .t-cap {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        color: var(--n6);
+      }
+      .t-num {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+        font-size: 56px;
+        line-height: 1;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        color: var(--n10);
+      }
+
+      /* ---------- 按钮 ---------- */
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+      .btn {
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 500;
+        border: 0;
+        cursor: pointer;
+        padding: 9px 16px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 120ms var(--ease), color 120ms, opacity 120ms, transform 180ms var(--ease);
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: color-mix(in srgb, var(--accent) 88%, white);
+      }
+      .btn-primary:active {
+        transform: scale(0.985);
+      }
+      .btn-soft {
+        background: var(--n2);
+        color: var(--n9);
+      }
+      .btn-soft:hover {
+        background: var(--n3);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--n7);
+      }
+      .btn-ghost:hover {
+        background: var(--n2);
+        color: var(--n10);
+      }
+      .btn:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+        outline-offset: 2px;
+      }
+      .btn[disabled] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .input {
+        background: var(--n2);
+        border: 1px solid transparent;
+        border-radius: 9px;
+        padding: 9px 12px;
+        font: inherit;
+        font-size: 13.5px;
+        color: var(--n10);
+        min-width: 220px;
+        outline: none;
+        transition: border-color 120ms;
+      }
+      .input::placeholder {
+        color: var(--n6);
+      }
+      .input:focus {
+        border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+      }
+
+      .chip {
+        font-size: 12px;
+        color: var(--n7);
+        background: var(--n1);
+        border-radius: 999px;
+        padding: 5px 11px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+
+      /* ---------- 卡片 ---------- */
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 16px;
+      }
+      .card {
+        background: var(--n1);
+        border-radius: var(--radius-card);
+        padding: 24px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        transition: background 260ms var(--ease), border-radius 260ms var(--ease);
+      }
+      body[data-theme="b"] .card {
+        box-shadow: inset 0 0 0 1px var(--n3);
+      }
+      .card-label {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--n6);
+        margin-bottom: 18px;
+      }
+
+      .ring-wrap {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+      }
+      .ring {
+        position: relative;
+        width: 168px;
+        height: 168px;
+        flex: none;
+      }
+      .ring .center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .ring .clock {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+        font-size: 34px;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        color: var(--n10);
+      }
+      .ring .state {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--n6);
+      }
+
+      /* ---------- 日历 ---------- */
+      .cal {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+      .cell {
+        position: relative;
+        height: 74px;
+        border-radius: 9px;
+        background: var(--n2);
+        padding: 8px 9px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: background 120ms;
+      }
+      .cell:hover {
+        background: var(--n3);
+      }
+      .cell .d {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--n9);
+        font-variant-numeric: tabular-nums;
+      }
+      .cell.today .d {
+        color: var(--accent-text);
+      }
+      .cell.today .d::after {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--accent);
+        margin-left: 5px;
+        vertical-align: 3px;
+      }
+      .cell .mood {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+      }
+      .cell .bar {
+        height: 3px;
+        width: 100%;
+        border-radius: 999px;
+        background: var(--heat0);
+        overflow: hidden;
+      }
+      .cell .bar i {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+      }
+      .cell .note {
+        position: absolute;
+        right: 9px;
+        bottom: 9px;
+        width: 2px;
+        height: 10px;
+        border-radius: 2px;
+        background: var(--n6);
+      }
+      .legend {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+        font-size: 11.5px;
+        color: var(--n6);
+      }
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 3px;
+        border-radius: 999px;
+        margin-right: 5px;
+        vertical-align: 2px;
+      }
+
+      /* ---------- 心情 ---------- */
+      .moods {
+        display: flex;
+        gap: 22px;
+      }
+      .mood-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+      }
+      .mood-item .orb {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        transition: transform 180ms var(--ease), box-shadow 180ms;
+      }
+      .mood-item[aria-pressed="true"] .orb {
+        transform: translateY(-2px);
+        box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent);
+      }
+      .mood-item span {
+        font-size: 11.5px;
+        color: var(--n6);
+      }
+      .mood-item[aria-pressed="true"] span {
+        color: var(--n9);
+      }
+
+      /* ---------- 日记 ---------- */
+      .prose {
+        max-width: 68ch;
+        font-size: 15px;
+        line-height: 1.9;
+        color: var(--n9);
+      }
+      body[data-theme="b"] .prose {
+        font-family: var(--serif);
+        font-size: 16px;
+      }
+      .prose h3 {
+        font-size: 15px;
+        letter-spacing: -0.01em;
+        color: var(--n10);
+        margin: 0 0 10px;
+      }
+      .prose p {
+        margin: 0 0 14px;
+      }
+      .prose blockquote {
+        margin: 0 0 14px;
+        padding-left: 16px;
+        border-left: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+        color: var(--n7);
+      }
+      .prose ul {
+        margin: 0 0 14px;
+        padding-left: 18px;
+        color: var(--n7);
+      }
+      .prose li {
+        margin-bottom: 6px;
+      }
+      .prose code {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        background: var(--n2);
+        padding: 2px 6px;
+        border-radius: 5px;
+        color: var(--n9);
+      }
+
+      .footer {
+        margin-top: 64px;
+        padding-top: 20px;
+        border-top: 1px solid var(--n3);
+        font-size: 11.5px;
+        color: var(--n6);
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="a">
+    <div class="wrap">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Style tile · v1</div>
+          <h1>番茄日历 · 风格试样</h1>
+          <p class="lede">
+            同一套 token，两种气质。左边是结构，右边是细节——两种都只改颜色、字体、间距和圆角，不动任何布局。
+          </p>
+        </div>
+        <div class="switch" role="group" aria-label="切换方向">
+          <button id="btn-a" aria-pressed="true" onclick="setTheme('a')">A · 暖中性极简</button>
+          <button id="btn-b" aria-pressed="false" onclick="setTheme('b')">B · 纸感编辑</button>
+        </div>
+      </div>
+
+      <section>
+        <h2 class="h2">01 中性色阶</h2>
+        <p class="hint">12 阶，深色往暖偏 2°，与番茄红同色温；层级靠明度，不靠描边。</p>
+        <div class="swatches">
+          <div class="sw" style="background: var(--n1)"><span>n1</span></div>
+          <div class="sw" style="background: var(--n2)"><span>n2</span></div>
+          <div class="sw" style="background: var(--n3)"><span>n3</span></div>
+          <div class="sw" style="background: var(--n4)"><span>n4</span></div>
+          <div class="sw" style="background: var(--n6)"><span>n6</span></div>
+          <div class="sw" style="background: var(--n7)"><span>n7</span></div>
+          <div class="sw" style="background: var(--n9)"><span>n9</span></div>
+          <div class="sw" style="background: var(--n10)"><span>n10</span></div>
+          <div class="sw" style="background: var(--accent)"><span>accent</span></div>
+          <div class="sw" style="background: var(--accent-weak)"><span>weak</span></div>
+          <div class="sw" style="background: var(--accent-text)"><span>text</span></div>
+          <div class="sw" style="background: var(--bg)"><span>bg</span></div>
+        </div>
+
+        <div class="heatrow">
+          <div class="sw" style="background: var(--heat0)"><span>0</span></div>
+          <div class="sw" style="background: var(--heat1)"><span>&lt;30m</span></div>
+          <div class="sw" style="background: var(--heat2)"><span>30–90m</span></div>
+          <div class="sw" style="background: var(--heat3)"><span>&gt;90m</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">02 字号阶梯</h2>
+        <p class="hint">中文最小 12px，正文 15/1.75，数字用等宽 + tabular-nums。</p>
+        <div class="type-row"><span class="tag">display 28</span><span class="t-display">今天想做点什么</span></div>
+        <div class="type-row"><span class="tag">h2 20</span><span class="t-h2">这段时间怎么样</span></div>
+        <div class="type-row"><span class="tag">h3 15</span><span class="t-h3">今天的心情</span></div>
+        <div class="type-row">
+          <span class="tag">body 15</span>
+          <span class="t-body">专注结束后别急着开下一个，先站起来走两步。记录一句话，比写一整页更有用。</span>
+        </div>
+        <div class="type-row"><span class="tag">body-s 13</span><span class="t-s">本月专注 12h 40m · 31 个番茄 · 记录 18 天</span></div>
+        <div class="type-row"><span class="tag">cap 12</span><span class="t-cap">今天 · 目标完成 62%</span></div>
+        <div class="type-row"><span class="tag">num 56</span><span class="t-num">18:42</span></div>
+      </section>
+
+      <section>
+        <h2 class="h2">03 控件与层级</h2>
+        <p class="hint">一屏只有一个 primary；面用 n1/n2/n3 分层，不叠边框。</p>
+        <div class="row" style="margin-bottom: 18px">
+          <button class="btn btn-primary">开始专注</button>
+          <button class="btn btn-soft">休息 5 分钟</button>
+          <button class="btn btn-ghost">跳过</button>
+          <button class="btn btn-soft" disabled>不可用</button>
+          <input class="input" placeholder="加一件事，回车创建" />
+          <span class="chip"><span class="dot"></span>连续 7 天</span>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-label">Focus</div>
+            <div class="ring-wrap">
+              <div class="ring">
+                <svg width="168" height="168" viewBox="0 0 168 168">
+                  <circle cx="84" cy="84" r="76" fill="none" stroke="var(--n3)" stroke-width="2" />
+                  <circle cx="84" cy="84" r="68" fill="none" stroke="var(--n3)" stroke-width="12" />
+                  <circle
+                    cx="84"
+                    cy="84"
+                    r="68"
+                    fill="none"
+                    stroke="var(--accent)"
+                    stroke-width="12"
+                    stroke-linecap="round"
+                    stroke-dasharray="427"
+                    stroke-dashoffset="182"
+                    transform="rotate(-90 84 84)"
+                  />
+                </svg>
+                <div class="center">
+                  <div class="clock">18:42</div>
+                  <div class="state">Focus</div>
+                </div>
+              </div>
+              <div>
+                <div class="t-h3" style="margin-bottom: 8px">写设计文档</div>
+                <div class="t-s" style="margin-bottom: 18px">第 2 个番茄 · 今天 4 个</div>
+                <div class="row">
+                  <button class="btn btn-soft">暂停</button>
+                  <button class="btn btn-ghost">放弃</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Mood</div>
+            <div class="moods">
+              <button class="mood-item" aria-pressed="false">
+                <span class="orb" style="background: #5b636f"></span><span>很糟</span>
+              </button>
+              <button class="mood-item" aria-pressed="false">
+                <span class="orb" style="background: #7f8fa6"></span><span>低落</span>
+              </button>
+              <button class="mood-item" aria-pressed="true">
+                <span class="orb" style="background: #c9a227"></span><span>一般</span>
+              </button>
+              <button class="mood-item" aria-pressed="false">
+                <span class="orb" style="background: #6fae7c"></span><span>不错</span>
+              </button>
+              <button class="mood-item" aria-pressed="false">
+                <span class="orb" style="background: #e8674c"></span><span>很好</span>
+              </button>
+            </div>
+            <div class="t-s" style="margin-top: 18px">点一下就好，晚点可以回来改。</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">04 日历</h2>
+        <p class="hint">一格只留两个信号：数字 + 底部热力条；心情用点、日记用短竖线，形状不同不打架。</p>
+        <div class="card">
+          <div class="cal">
+            <div class="cell">
+              <span class="d">10</span>
+              <span class="mood" style="background: #6fae7c"></span>
+              <span class="bar"><i style="width: 78%; background: var(--heat2)"></i></span>
+            </div>
+            <div class="cell">
+              <span class="d">11</span>
+              <span class="bar"><i style="width: 0; background: var(--heat0)"></i></span>
+            </div>
+            <div class="cell">
+              <span class="d">12</span>
+              <span class="mood" style="background: #c9a227"></span>
+              <span class="bar"><i style="width: 34%; background: var(--heat1)"></i></span>
+              <span class="note"></span>
+            </div>
+            <div class="cell">
+              <span class="d">13</span>
+              <span class="mood" style="background: #7f8fa6"></span>
+              <span class="bar"><i style="width: 100%; background: var(--heat3)"></i></span>
+              <span class="note"></span>
+            </div>
+            <div class="cell">
+              <span class="d">14</span>
+              <span class="bar"><i style="width: 12%; background: var(--heat1)"></i></span>
+            </div>
+            <div class="cell">
+              <span class="d">15</span>
+              <span class="mood" style="background: #e8674c"></span>
+              <span class="bar"><i style="width: 62%; background: var(--heat2)"></i></span>
+            </div>
+            <div class="cell today">
+              <span class="d">16</span>
+              <span class="mood" style="background: #6fae7c"></span>
+              <span class="bar"><i style="width: 46%; background: var(--heat2)"></i></span>
+            </div>
+          </div>
+          <div class="legend">
+            <span><i style="background: var(--heat1)"></i>0–30m</span>
+            <span><i style="background: var(--heat2)"></i>30–90m</span>
+            <span><i style="background: var(--heat3)"></i>90m+</span>
+            <span>右上圆点 = 心情 · 右下短线 = 有日记</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="h2">05 日记排版</h2>
+        <p class="hint">行长 68ch，行高 1.9；方向 B 下正文自动切衬线，标题也跟着变。</p>
+        <div class="card">
+          <div class="prose">
+            <h3>今天的一点记录</h3>
+            <p>上午专注得不错，手机放远一点确实有用。下午有点散，明天试试先做最难的那件。</p>
+            <blockquote>番茄钟结束别急着开下一个，先站起来走两步。</blockquote>
+            <ul>
+              <li>上午：写文档 3 个番茄</li>
+              <li>下午：整理笔记 1 个，<code>Ctrl+B</code> 习惯还没建立</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        <span>字体：Inter（OFL）· 中文用系统栈，不打包微软雅黑</span>
+        <span>A 暖中性极简 / B 纸感编辑 · 同一套 token</span>
+      </div>
+    </div>
+
+    <script>
+      function setTheme(name) {
+        document.body.dataset.theme = name;
+        document.getElementById("btn-a").setAttribute("aria-pressed", String(name === "a"));
+        document.getElementById("btn-b").setAttribute("aria-pressed", String(name === "b"));
+      }
+    </script>
+  </body>
+</html>

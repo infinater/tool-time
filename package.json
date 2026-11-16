@@ -1,0 +1,42 @@
+{
+  "name": "tool-time",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.28.5",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-notification": "^2",
+    "@tauri-apps/plugin-sql": "^2",
+    "clsx": "^2",
+    "date-fns": "^4",
+    "lucide-react": "^1.73.0",
+    "react": "^19",
+    "react-day-picker": "^9",
+    "react-dom": "^19",
+    "react-markdown": "^10",
+    "react-router-dom": "^7",
+    "remark-gfm": "^4",
+    "tailwind-merge": "^3",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5",
+    "tailwindcss": "^4",
+    "typescript": "~5.9",
+    "vite": "^7"
+  }
+}
