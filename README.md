@@ -19,9 +19,17 @@ Windows 桌面端的「番茄钟 + 日历 + 心情 + 日记」。基于设计文
 | 托盘 / 全局快捷键 / Toast | ✅ | 桌面壳：关闭收托盘、Ctrl+Alt+P 开始暂停、完成弹 Windows 通知 |
 | SQLite | ✅ | `%APPDATA%\com.tooltime.pomodoro\tooltime.db`；浏览器下自动回退 localStorage |
 
+## 环境要求
+
+| 用途 | 需要 |
+| --- | --- |
+| 只跑浏览器版 | Node.js 18+、pnpm（或 corepack） |
+| 构建桌面版 | 上述 + **Rust stable（MSVC 工具链）** + **Visual Studio Build Tools（C++ 桌面开发）** + Windows SDK |
+| 运行桌面版 | 上述 + **WebView2 Runtime**（Win11 自带；Win10 需装 [Evergreen Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)） |
+
 ## 快速开始
 
-**最简单：双击 `start.cmd`**，按提示选 1（浏览器）/ 2（桌面窗口）/ 3（打包安装程序）。
+**最简单：双击 `start.cmd`**，按提示选 1（浏览器）/ 2（桌面窗口）/ 3（打包安装程序）/ 4（创建快捷方式）。
 
 手动命令：
 
@@ -41,9 +49,32 @@ pnpm tauri:dev
 pnpm tauri:build
 ```
 
-> 本机当前没有全局 pnpm 时，可以用：`node "C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\pnpm\bin\pnpm.mjs" <命令>`。
-
 应用从空数据开始，不预置任何记录。设置页有「清空数据」。
+
+### 国内网络加速（可选）
+
+拉 Rust 依赖慢时，在项目根建 `.cargo/config.toml`（已被 gitignore）：
+
+```toml
+[source.crates-io]
+replace-with = "rsproxy-sparse"
+
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+```
+
+装 Rust 时同理：`$env:RUSTUP_DIST_SERVER="https://rsproxy.cn"`。
+
+## 常见问题
+
+| 现象 | 原因 / 解决 |
+| --- | --- |
+| `cl: 命令行 error D8050 无法执行 c1.dll` | MSVC 编译 sqlite3.c 时命令行过长。已在 `src-tauri/Cargo.toml` 设 `[profile.dev] debug = 0`，不要改回去 |
+| 窗口一闪而过 / `os error 5 拒绝访问` | WebView2 数据目录不可写。程序会自动回退到 exe 同级 `data\`；若仍失败，检查磁盘权限 |
+| 桌面版打开是白屏且地址是 `localhost:5183` | 用了 `cargo build --release` 直接构建。**必须用 `pnpm tauri build`**，否则会被当成 dev 模式加载 dev server |
+| 端口 5183 被占用 | 先关掉旧的 `pnpm dev` 窗口；`vite.config.ts` 里是 `strictPort: true` |
+| 收不到完成通知 | 未安装的绿色版没有 AUMID，Toast 可能不弹；用安装包安装后正常 |
+| 数据存在哪 | 正常：`%LOCALAPPDATA%\com.tooltime.pomodoro\`；受限环境：exe 同级 `data\`；SQLite 不可用时回退 localStorage |
 
 ## 项目结构
 

@@ -1,5 +1,5 @@
 ﻿param(
-  [ValidateSet("dev", "desktop", "build")]
+  [ValidateSet("dev", "desktop", "build", "shortcut")]
   [string]$Mode
 )
 
@@ -10,7 +10,30 @@ Set-Location $Root
 function Write-Step($text) { Write-Host "`n==> $text" -ForegroundColor Cyan }
 function Write-Ok($text) { Write-Host "    $text" -ForegroundColor DarkGray }
 
-# ---------- 1. Rust（只给桌面版/打包用） ----------
+# ---------- 1. 依赖 ----------
+function Get-PnpmArgs {
+  if (Get-Command pnpm -ErrorAction SilentlyContinue) { return @("pnpm") }
+  if (Get-Command corepack -ErrorAction SilentlyContinue) { return @("corepack", "pnpm") }
+  if (Get-Command npm -ErrorAction SilentlyContinue) {
+    Write-Step "没有找到 pnpm，正在用 npm 全局安装（只需一次）"
+    & npm i -g pnpm
+    if (Get-Command pnpm -ErrorAction SilentlyContinue) { return @("pnpm") }
+  }
+  throw "找不到 pnpm / npm。请先安装 Node.js 18+（https://nodejs.org/），再执行 npm i -g pnpm"
+}
+
+function Invoke-Pnpm {
+  $p = Get-PnpmArgs
+  $exe = $p[0]
+  $pre = @()
+  if ($p.Length -gt 1) { $pre = $p[1..($p.Length - 1)] }
+  & $exe @pre @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "命令失败：$exe $($pre -join ' ') $($args -join ' ')"
+  }
+}
+
+# ---------- 2. Rust（只给桌面版/打包用） ----------
 function Ensure-Rust {
   $cargoBin = Join-Path $env:USERPROFILE ".cargo\bin"
   if (Test-Path $cargoBin) { $env:Path = "$cargoBin;$env:Path" }
@@ -29,25 +52,7 @@ function Ensure-Rust {
   & rustc -V
 }
 
-# ---------- 2. pnpm ----------
-function Get-PnpmArgs {
-  if (Get-Command pnpm -ErrorAction SilentlyContinue) { return @("pnpm") }
-  if (Get-Command corepack -ErrorAction SilentlyContinue) { return @("corepack", "pnpm") }
-  $bundled = Join-Path $env:USERPROFILE ".dsh\dsh-runtimes\dsh-primary-runtime\dependencies\pnpm\bin\pnpm.mjs"
-  if (Test-Path $bundled) { return @("node", $bundled) }
-  throw "找不到 pnpm。请先执行：npm i -g pnpm"
-}
-
-function Invoke-Pnpm {
-  $p = Get-PnpmArgs
-  $exe = $p[0]
-  $pre = @()
-  if ($p.Length -gt 1) { $pre = $p[1..($p.Length - 1)] }
-  & $exe @pre @args
-  if ($LASTEXITCODE -ne 0) { throw "命令失败：$exe $($pre -join ' ') $($args -join ' ')" }
-}
-
-# ---------- 3. 依赖 ----------
+# ---------- 3. 前端依赖 ----------
 if (-not (Test-Path (Join-Path $Root "node_modules"))) {
   Write-Step "首次安装前端依赖"
   Invoke-Pnpm install
@@ -61,9 +66,16 @@ if (-not $Mode) {
   Write-Host "  1) 浏览器版（秒开，不需要 Rust）"
   Write-Host "  2) 桌面窗口版（首次要编译 Rust，约 3-8 分钟）"
   Write-Host "  3) 打包 Windows 安装程序（NSIS）"
+  Write-Host "  4) 创建桌面 / 开始菜单快捷方式（需先打包）"
   Write-Host "  ------------------------------------" -ForegroundColor DarkGray
-  $choice = Read-Host "  输入 1 / 2 / 3，回车确认"
-  $Mode = switch ($choice.Trim()) { "1" { "dev" } "2" { "desktop" } "3" { "build" } default { "dev" } }
+  $choice = Read-Host "  输入 1 / 2 / 3 / 4，回车确认"
+  $Mode = switch ($choice.Trim()) {
+    "1" { "dev" }
+    "2" { "desktop" }
+    "3" { "build" }
+    "4" { "shortcut" }
+    default { "dev" }
+  }
 }
 
 switch ($Mode) {
@@ -83,5 +95,12 @@ switch ($Mode) {
     Write-Step "打包安装程序（首次同样要编译 Rust，时间更久）"
     Invoke-Pnpm tauri build
     Write-Ok "产物：src-tauri\target\release\bundle\nsis\*.exe"
+  }
+  "shortcut" {
+    $exe = Join-Path $Root "src-tauri\target\release\tool-time.exe"
+    if (-not (Test-Path $exe)) {
+      throw "还没打包。先运行一次选项 3（或 pnpm tauri build）。"
+    }
+    & (Join-Path $PSScriptRoot "make-shortcuts.ps1") -ExePath $exe
   }
 }
