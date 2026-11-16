@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { DBShape, DayEntry, FocusSession } from "./types";
+import type { DBShape, DayEntry, FocusSession, Mood } from "./types";
 import { addDays, localDateOf, parseLocalDate } from "./utils";
 
 export function sessionsOn(db: Pick<DBShape, "sessions">, date: string): FocusSession[] {
@@ -118,4 +118,101 @@ export function weekdays(weekStartsOn: 0 | 1): string[] {
 export function monthOf(date: string): Date {
   const d = parseLocalDate(date);
   return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* 开心度（Happiness Index）                                           */
+/* 公式见 docs/改进计划-v2.md §3：                                     */
+/*   h = Σ(score × weight) / Σ(weight)，index = round((h + 1) × 50)    */
+/* ------------------------------------------------------------------ */
+
+export interface HappinessPoint {
+  date: string;
+  /** 0–100，无数据为 null */
+  index: number | null;
+  /** 参与计算的样本数 */
+  samples: number;
+}
+
+const MOOD_SCORE: Record<Mood, number> = { 1: -1, 2: -0.5, 3: 0, 4: 0.5, 5: 1 };
+
+/** 每次专注的权重：25 分钟 = 1.0，下限 0.5、上限 2.0 */
+function sessionWeight(actualSeconds: number): number {
+  return Math.min(2, Math.max(0.5, actualSeconds / 60 / 25));
+}
+
+export function happinessOfDay(
+  db: Pick<DBShape, "sessions" | "dayEntries">,
+  date: string,
+): HappinessPoint {
+  const scored = db.sessions.filter(
+    (s) => s.localDate === date && s.kind === "work" && s.status === "completed" && s.moodAfter !== undefined,
+  );
+
+  let sum = 0;
+  let weightSum = 0;
+  let samples = 0;
+
+  if (scored.length > 0) {
+    for (const session of scored) {
+      const score = MOOD_SCORE[session.moodAfter as Mood];
+      const weight = sessionWeight(session.actualSeconds);
+      sum += score * weight;
+      weightSum += weight;
+      samples += 1;
+    }
+  } else {
+    // 当天没有任何 session 心情时，回退到日心情
+    const entry = db.dayEntries.find((e) => e.localDate === date);
+    if (entry?.mood !== undefined) {
+      sum = MOOD_SCORE[entry.mood];
+      weightSum = 1;
+      samples = 1;
+    }
+  }
+
+  if (weightSum === 0) return { date, index: null, samples: 0 };
+
+  const h = Math.min(1, Math.max(-1, sum / weightSum));
+  return { date, index: Math.round((h + 1) * 50), samples };
+}
+
+export function happinessRange(
+  db: Pick<DBShape, "sessions" | "dayEntries">,
+  fromDate: string,
+  toDate: string,
+): HappinessPoint[] {
+  const points: HappinessPoint[] = [];
+  if (fromDate > toDate) return points;
+
+  let cursor = fromDate;
+  // 防御：区间过大时最多取 400 天
+  for (let i = 0; i < 400 && cursor <= toDate; i++) {
+    points.push(happinessOfDay(db, cursor));
+    cursor = addDays(cursor, 1);
+  }
+  return points;
+}
+
+/** 区间平均开心度：按样本数加权，无数据返回 null */
+export function happinessAverage(
+  db: Pick<DBShape, "sessions" | "dayEntries">,
+  fromDate: string,
+  toDate: string,
+): number | null {
+  const points = happinessRange(db, fromDate, toDate).filter((p) => p.index !== null && p.samples > 0);
+  if (points.length === 0) return null;
+
+  const totalSamples = points.reduce((acc, p) => acc + p.samples, 0);
+  const weighted = points.reduce((acc, p) => acc + (p.index as number) * p.samples, 0);
+  return Math.round(weighted / totalSamples);
+}
+
+/** 最近 n 天（含今天）的开心度序列 */
+export function happinessLastDays(
+  db: Pick<DBShape, "sessions" | "dayEntries">,
+  days = 7,
+): HappinessPoint[] {
+  const today = localDateOf();
+  return happinessRange(db, addDays(today, -(days - 1)), today);
 }

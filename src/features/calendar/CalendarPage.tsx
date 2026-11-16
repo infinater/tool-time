@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import {
   dayEntryOn,
   focusSecondsOn,
+  happinessAverage,
   heatLevel,
   heatWidth,
   monthGrid,
@@ -17,6 +18,7 @@ import {
 import MoodPicker from "@/features/mood/MoodPicker";
 import MarkdownView from "@/shared/MarkdownView";
 import AnimatedNumber from "@/shared/AnimatedNumber";
+import { useUndo } from "@/shared/undo";
 import { useViewTransition } from "@/shared/viewTransition";
 import { cn, formatDateLabel, formatDuration, isFuture, localDateOf } from "@/lib/utils";
 
@@ -38,6 +40,9 @@ export default function CalendarPage() {
   const moodStyle = useData((s) => s.settings.moodStyle);
   const journalSerif = useData((s) => s.settings.journalSerif);
   const setMood = useData((s) => s.setMood);
+  const removeSession = useData((s) => s.removeSession);
+  const putBackSession = useData((s) => s.putBackSession);
+  const { push } = useUndo();
 
   const [month, setMonth] = useState<Date>(() => {
     const d = new Date();
@@ -47,6 +52,10 @@ export default function CalendarPage() {
 
   const cells = useMemo(() => monthGrid(month, weekStartsOn), [month, weekStartsOn]);
   const summary = useMemo(() => monthSummary({ sessions, dayEntries }, month), [sessions, dayEntries, month]);
+  const monthHappiness = useMemo(() => {
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    return happinessAverage({ sessions, dayEntries }, localDateOf(month), localDateOf(last));
+  }, [sessions, dayEntries, month]);
   const selectedEntry = dayEntryOn({ dayEntries }, selected);
   const selectedSessions = sessionsOn({ sessions }, selected);
   const selectedReflections = reflections.filter((r) => r.localDate === selected);
@@ -108,6 +117,12 @@ export default function CalendarPage() {
           <>
             <span className="mx-2 text-muted">·</span>平均心情{" "}
             <span className="font-medium text-ink">{summary.avgMood.toFixed(1)}</span>
+          </>
+        )}
+        {monthHappiness !== null && (
+          <>
+            <span className="mx-2 text-muted">·</span>开心度{" "}
+            <span className="font-medium text-ink">{monthHappiness}</span>
           </>
         )}
       </p>
@@ -235,15 +250,31 @@ export default function CalendarPage() {
             )}
 
             {selectedSessions.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-[9px] bg-elevated px-3 py-2">
+              <div key={s.id} className="flex items-center justify-between gap-2 rounded-[9px] bg-elevated px-3 py-2">
                 <span className="text-[12.5px] text-sub numeric">
                   {new Date(s.startedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
                   <span className="ml-2 text-muted">
                     {s.kind === "work" ? "专注" : "休息"} · {Math.round(s.actualSeconds / 60)} 分钟
                   </span>
                 </span>
-                <span className={cn("text-[11px]", s.status === "completed" ? "text-accent-text" : "text-muted")}>
-                  {s.status === "completed" ? "完成" : s.status === "aborted" ? "放弃" : s.status === "skipped" ? "跳过" : "进行中"}
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("text-[11px]", s.status === "completed" ? "text-accent-text" : "text-muted")}>
+                    {s.status === "completed" ? "完成" : s.status === "aborted" ? "放弃" : s.status === "skipped" ? "跳过" : "进行中"}
+                  </span>
+                  <button
+                    className="btn-ghost px-1 py-0.5 text-muted hover:text-accent-text"
+                    title="删除这条记录"
+                    onClick={() => {
+                      const snapshot = s;
+                      removeSession(snapshot.id);
+                      push({
+                        message: "已删除 1 条专注记录",
+                        restore: () => putBackSession(snapshot),
+                      });
+                    }}
+                  >
+                    <Trash2 size={12} strokeWidth={1.8} />
+                  </button>
                 </span>
               </div>
             ))}

@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, CalendarDays, Command, Lock, Moon, Settings as SettingsIcon, Sun, Timer } from "lucide-react";
+import { BarChart3, CalendarDays, Command, Lock, Moon, NotebookPen, Settings as SettingsIcon, Sun, Timer } from "lucide-react";
 import { useData } from "@/lib/store";
 import { cn, localDateOf } from "@/lib/utils";
 import { useSystemBridge } from "@/lib/system";
 import { useViewTransition } from "@/shared/viewTransition";
+import { UndoProvider } from "@/shared/undo";
 import CommandPalette, { type PaletteCommand } from "@/features/palette/CommandPalette";
 import { useCommandPaletteHotkey } from "@/features/palette/useCommandPalette";
 import { useTimer } from "@/features/timer/timerStore";
 import TodayPage from "@/features/today/TodayPage";
 import CalendarPage from "@/features/calendar/CalendarPage";
 import JournalPage from "@/features/journal/JournalPage";
+import JournalLibrary from "@/features/journal/JournalLibrary";
 import StatsPage from "@/features/stats/StatsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import FinishDialog from "@/features/timer/FinishDialog";
@@ -21,6 +23,7 @@ import StartConfirmDialog from "@/features/timer/StartConfirmDialog";
 const NAV = [
   { to: "/", label: "今天", icon: Timer, end: true },
   { to: "/calendar", label: "日历", icon: CalendarDays },
+  { to: "/journal", label: "日记", icon: NotebookPen },
   { to: "/stats", label: "统计", icon: BarChart3 },
   { to: "/settings", label: "设置", icon: SettingsIcon },
 ];
@@ -96,6 +99,8 @@ export default function App() {
       { id: "nav-calendar", title: "日历", subtitle: "按月回看专注与心情", group: "导航", keywords: "calendar rl 月历", run: () => go("/calendar") },
       { id: "nav-stats", title: "统计", subtitle: "专注时长与趋势", group: "导航", keywords: "stats report 报表", run: () => go("/stats") },
       { id: "nav-settings", title: "设置", subtitle: "时长、外观与数据", group: "导航", keywords: "settings config 偏好", run: () => go("/settings") },
+      { id: "nav-journal", title: "日记", subtitle: "写或回看今天的记录", group: "导航", keywords: "journal diary 日记 记录", run: () => go(`/journal/${localDateOf()}`) },
+      { id: "nav-journal-library", title: "日记库", subtitle: "浏览、搜索、整理所有日记", group: "导航", keywords: "library archive 日记库 归档 整理", run: () => go("/journal/library") },
       {
         id: "act-start",
         title: "开始专注",
@@ -157,7 +162,8 @@ export default function App() {
   }, [tasks, theme, settings.workMinutes, go, updateSettings]);
 
   return (
-    <div className="flex h-full">
+    <UndoProvider>
+      <div className="flex h-full">
       <aside className="flex w-[224px] shrink-0 flex-col px-3 py-5" style={{ viewTransitionName: "sidebar" }}>
         <div className="mb-7 flex items-center gap-2.5 px-2">
           <TomatoMark />
@@ -219,6 +225,7 @@ export default function App() {
             <Route path="/" element={<TodayPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/journal" element={<JournalPage />} />
+            <Route path="/journal/library" element={<JournalLibrary />} />
             <Route path="/journal/:date" element={<JournalPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
@@ -230,6 +237,7 @@ export default function App() {
       <FocusMode />
       <StartConfirmDialog />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} commands={commands} />
-    </div>
+      </div>
+    </UndoProvider>
   );
 }

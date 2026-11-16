@@ -18,6 +18,8 @@ interface TimerState {
   lastKind: SessionKind | null;
   /** 每完成一次番茄 +1，用于触发圆环闪一下 */
   flash: number;
+  /** 刚完成的 session id（结束面板写心情用） */
+  lastSessionId: string | null;
   /** 专注模式（放大界面，只留计时） */
   focusMode: boolean;
   openFocusMode: () => void;
@@ -95,6 +97,7 @@ export const useTimer = create<TimerState>((set, get) => ({
   showFinish: false,
   lastKind: null,
   flash: 0,
+  lastSessionId: null,
   focusMode: false,
   workMinutesOverride: null,
   pendingConfirm: null,
@@ -198,6 +201,7 @@ export const useTimer = create<TimerState>((set, get) => ({
       showFinish: kind === "work",
       lastKind: kind,
       sessionId: null,
+      lastSessionId: sessionId,
       flash: kind === "work" ? state.flash + 1 : state.flash,
       focusMode: false,
     });

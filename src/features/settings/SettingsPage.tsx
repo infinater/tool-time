@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Download, RotateCcw, Upload } from "lucide-react";
 import { useData } from "@/lib/store";
-import { cn, localDateOf } from "@/lib/utils";
+import { ConfirmDialog } from "@/shared/undo";
+import { addDays, cn, localDateOf } from "@/lib/utils";
 
 export default function SettingsPage() {
   const settings = useData((s) => s.settings);
@@ -10,8 +11,10 @@ export default function SettingsPage() {
   const importJSON = useData((s) => s.importJSON);
   const resetAll = useData((s) => s.resetAll);
   const sessions = useData((s) => s.sessions);
+  const clearRangeAction = useData((s) => s.clearRange);
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [clearRange, setClearRange] = useState<"7d" | "month" | "all" | null>(null);
 
   const flash = (text: string) => {
     setMsg(text);
@@ -171,7 +174,41 @@ export default function SettingsPage() {
             当前版本用本地存储持久化；接线 Tauri 后迁移到 SQLite，导出格式不变。
           </p>
         </Section>
+
+        <Section title="数据整理" hint="按范围清理记录，清空前建议先导出 JSON">
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-soft" onClick={() => setClearRange("7d")}>
+              清空近 7 天
+            </button>
+            <button className="btn-soft" onClick={() => setClearRange("month")}>
+              清空本月
+            </button>
+            <button className="btn-ghost text-accent-text" onClick={() => setClearRange("all")}>
+              清空全部记录
+            </button>
+          </div>
+          <p className="text-[11.5px] leading-relaxed text-muted">
+            会同时删除该范围内的专注记录、日记与专注感想；此操作不可撤销。
+          </p>
+        </Section>
       </div>
+
+      <ConfirmDialog
+        open={clearRange !== null}
+        title={clearRange === "7d" ? "清空近 7 天的记录？" : clearRange === "month" ? "清空本月的记录？" : "清空全部记录？"}
+        description="该范围内的专注记录、日记和感想会被永久删除，无法撤销。建议先在上方导出 JSON 备份。"
+        confirmText="删除"
+        danger
+        onConfirm={() => {
+          const today = localDateOf();
+          if (clearRange === "7d") clearRangeAction(addDays(today, -6), today);
+          else if (clearRange === "month") clearRangeAction(`${today.slice(0, 7)}-01`, today);
+          else clearRangeAction("0000-01-01", "9999-12-31");
+          setClearRange(null);
+          flash("已清空所选范围");
+        }}
+        onCancel={() => setClearRange(null)}
+      />
 
       <div className="py-10 text-center text-[11px] text-muted">番茄日历 v{__APP_VERSION__} · 数据不出本机</div>
     </div>

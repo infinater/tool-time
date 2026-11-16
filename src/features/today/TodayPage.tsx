@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Flame, Maximize2, Play, Plus, Target, Trash2 } from "lucide-react";
 import RingTimer from "@/features/timer/RingTimer";
 import MoodPicker from "@/features/mood/MoodPicker";
+import HappinessGauge from "@/features/happiness/HappinessGauge";
 import AnimatedNumber from "@/shared/AnimatedNumber";
 import { useFlipList } from "@/shared/useFlipList";
 import { useData } from "@/lib/store";
-import { dayEntryOn, focusSecondsOn, pomodorosOn, streakDays } from "@/lib/selectors";
+import { dayEntryOn, focusSecondsOn, happinessOfDay, pomodorosOn, streakDays } from "@/lib/selectors";
 import type { Mood, Task } from "@/lib/types";
 import { cn, formatDateLabel, formatDuration, greeting, localDateOf } from "@/lib/utils";
 import { useTimer } from "@/features/timer/timerStore";
@@ -33,6 +34,7 @@ export default function TodayPage() {
   const focusSecs = focusSecondsOn({ sessions }, today);
   const pomodoros = pomodorosOn({ sessions }, today);
   const streak = streakDays({ sessions, dayEntries });
+  const happiness = happinessOfDay({ sessions, dayEntries }, today);
   const journal = entry?.journalMd?.trim() ?? "";
   const openTasks = tasks.filter((t) => t.status === "todo");
   const doneTasks = tasks.filter((t) => t.status === "done");
@@ -111,9 +113,14 @@ export default function TodayPage() {
               <h2 className="text-[15px] font-semibold text-strong">今天的心情</h2>
               <span className="text-[11px] text-muted">点一下就好</span>
             </div>
-            <MoodPicker value={entry?.mood} onChange={(m: Mood) => setMood(today, m)} showLabels style={settings.moodStyle} />
-            <div className="mt-3 text-[12px] text-sub">
-              {entry?.mood ? "已记录，晚点可以回来改。" : "还没记录，现在选一个？"}
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <MoodPicker value={entry?.mood} onChange={(m: Mood) => setMood(today, m)} showLabels style={settings.moodStyle} />
+                <div className="mt-3 text-[12px] text-sub">
+                  {entry?.mood ? "已记录，晚点可以回来改。" : "还没记录，现在选一个？"}
+                </div>
+              </div>
+              <HappinessGauge index={happiness.index} samples={happiness.samples} size={116} />
             </div>
           </section>
 

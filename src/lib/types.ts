@@ -16,16 +16,28 @@ export interface FocusSession {
   /** YYYY-MM-DD，按本机时区归算，用于日历与统计 */
   localDate: string;
   note?: string;
+  /** 这次专注结束后的心情（1-5），未记录为 undefined */
+  moodAfter?: Mood;
+  /** 开始前的心情（可选，本轮不做 UI，只留字段） */
+  moodBefore?: Mood;
 }
+
+/** 日记状态：draft = 正在写；archived = 已归档（只读档案态） */
+export type JournalStatus = "draft" | "archived";
 
 export interface DayEntry {
   id: string;
   localDate: string;
+  /** 当日整体心情；未手动选择时可由当日 session.moodAfter 派生（只展示，不回写） */
   mood?: Mood;
   tags: string[];
   journalTitle?: string;
   journalMd: string;
   isBackfilled: boolean;
+  /** draft = 正在写；archived = 已归档（只读档案态） */
+  status: JournalStatus;
+  /** 归档时间戳；「继续编辑」后保留作为历史 */
+  archivedAt?: number;
   createdAt: number;
   updatedAt: number;
 }

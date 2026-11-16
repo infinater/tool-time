@@ -3,6 +3,7 @@ import type {
   DBShape,
   DayEntry,
   FocusSession,
+  JournalStatus,
   Mood,
   Reflection,
   SessionKind,
@@ -26,7 +27,8 @@ const DB_URL =
     ? (window as unknown as { __TOOLTIME_DB_URL__?: string }).__TOOLTIME_DB_URL__
     : undefined) ?? "sqlite:tooltime.db";
 const SETTINGS_KEY = "app";
-const SCHEMA_VERSION = 1;
+/** 与 src-tauri/migrations 的迁移版本保持一致：v2 = 心情 + 日记归档 */
+const SCHEMA_VERSION = 2;
 
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -118,6 +120,9 @@ interface SessionRow {
   interruptions: number;
   local_date: string;
   note: string | null;
+  /** v2 新增：结束后 / 开始前的心情，未记录为 NULL */
+  mood_after: number | null;
+  mood_before: number | null;
 }
 
 interface DayEntryRow {
@@ -128,6 +133,10 @@ interface DayEntryRow {
   journal_title: string | null;
   journal_md: string | null;
   is_backfilled: number;
+  /** v2 新增：'draft' / 'archived'，旧库回填默认值 'draft' */
+  status: string | null;
+  /** v2 新增：归档时间戳，NULL 表示未归档 */
+  archived_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -149,6 +158,7 @@ interface SettingRow {
 const SESSION_KINDS: readonly SessionKind[] = ["work", "short_break", "long_break"];
 const SESSION_STATUSES: readonly SessionStatus[] = ["running", "completed", "aborted", "skipped"];
 const REFLECTION_TYPES: readonly Reflection["type"][] = ["quick", "daily"];
+const JOURNAL_STATUSES: readonly JournalStatus[] = ["draft", "archived"];
 
 function num(value: unknown, fallback = 0): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -212,6 +222,11 @@ function toSession(row: SessionRow): FocusSession {
   if (endedAt !== undefined) session.endedAt = endedAt;
   const note = optStr(row.note);
   if (note !== undefined) session.note = note;
+  // v2：旧库这两列不存在（SQL 里会是 undefined，等价于 NULL），toMood 会得到 undefined
+  const moodAfter = toMood(row.mood_after);
+  if (moodAfter !== undefined) session.moodAfter = moodAfter;
+  const moodBefore = toMood(row.mood_before);
+  if (moodBefore !== undefined) session.moodBefore = moodBefore;
   return session;
 }
 
@@ -222,6 +237,8 @@ function toDayEntry(row: DayEntryRow): DayEntry {
     tags: parseTags(row.tags),
     journalMd: String(row.journal_md ?? ""),
     isBackfilled: num(row.is_backfilled) !== 0,
+    // status 缺省/非法（老记录没有该列）一律按 draft 处理
+    status: oneOf(row.status, JOURNAL_STATUSES, "draft"),
     createdAt: num(row.created_at),
     updatedAt: num(row.updated_at),
   };
@@ -229,6 +246,8 @@ function toDayEntry(row: DayEntryRow): DayEntry {
   if (mood !== undefined) entry.mood = mood;
   const title = optStr(row.journal_title);
   if (title !== undefined) entry.journalTitle = title;
+  const archivedAt = optNum(row.archived_at);
+  if (archivedAt !== undefined) entry.archivedAt = archivedAt;
   return entry;
 }
 
@@ -339,6 +358,8 @@ async function writeSnapshot(conn: Database, db: DBShape): Promise<void> {
       "interruptions",
       "local_date",
       "note",
+      "mood_after",
+      "mood_before",
     ],
     [
       "task_id",
@@ -352,6 +373,8 @@ async function writeSnapshot(conn: Database, db: DBShape): Promise<void> {
       "interruptions",
       "local_date",
       "note",
+      "mood_after",
+      "mood_before",
     ],
     db.sessions.map((s) => [
       s.id,
@@ -366,6 +389,8 @@ async function writeSnapshot(conn: Database, db: DBShape): Promise<void> {
       s.interruptions,
       s.localDate,
       s.note ?? null,
+      s.moodAfter ?? null,
+      s.moodBefore ?? null,
     ]),
   );
 
@@ -381,6 +406,8 @@ async function writeSnapshot(conn: Database, db: DBShape): Promise<void> {
       "journal_title",
       "journal_md",
       "is_backfilled",
+      "status",
+      "archived_at",
       "created_at",
       "updated_at",
     ],
@@ -393,6 +420,9 @@ async function writeSnapshot(conn: Database, db: DBShape): Promise<void> {
       e.journalTitle ?? null,
       e.journalMd,
       e.isBackfilled ? 1 : 0,
+      // 老数据可能没有 status 字段：落库前兜底成 draft
+      e.status === "archived" ? "archived" : "draft",
+      e.archivedAt ?? null,
       e.createdAt,
       e.updatedAt,
     ]),

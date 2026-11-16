@@ -1,9 +1,20 @@
 import { create } from "zustand";
 import { isTauri, loadSnapshot, saveSnapshot } from "./db";
-import type { DBShape, DayEntry, FocusSession, Mood, Reflection, Settings, Task } from "./types";
+import type {
+  DBShape,
+  DayEntry,
+  FocusSession,
+  JournalStatus,
+  Mood,
+  Reflection,
+  Settings,
+  Task,
+} from "./types";
 import { localDateOf, uid } from "./utils";
 
 const STORAGE_KEY = "tool-time.db.v1";
+/** 数据结构版本（与 SQLite 迁移版本对齐：v2 = 心情 + 日记归档） */
+const SCHEMA_VERSION = 2;
 
 export const defaultSettings: Settings = {
   workMinutes: 25,
@@ -22,7 +33,14 @@ export const defaultSettings: Settings = {
 };
 
 export function emptyDB(): DBShape {
-  return { version: 1, tasks: [], sessions: [], dayEntries: [], reflections: [], settings: { ...defaultSettings } };
+  return {
+    version: SCHEMA_VERSION,
+    tasks: [],
+    sessions: [],
+    dayEntries: [],
+    reflections: [],
+    settings: { ...defaultSettings },
+  };
 }
 
 
@@ -86,6 +104,17 @@ interface DataActions {
   updateSession: (id: string, patch: Partial<FocusSession>) => void;
   ensureDay: (date: string) => DayEntry;
   setMood: (date: string, mood: Mood | undefined) => void;
+  /** 给某次专注写心情（结束面板用） */
+  setSessionMood: (id: string, mood: Mood) => void;
+  removeSession: (id: string) => void;
+  putBackSession: (session: FocusSession) => void;
+  archiveJournal: (date: string) => void;
+  reopenJournal: (date: string) => void;
+  setJournalStatus: (date: string, status: JournalStatus) => void;
+  removeDayEntry: (date: string) => void;
+  putBackDayEntry: (entry: DayEntry) => void;
+  /** 清空区间内的专注 / 日记 / 感想（端点包含） */
+  clearRange: (fromDate: string, toDate: string) => void;
   updateJournal: (date: string, patch: Partial<Pick<DayEntry, "journalMd" | "journalTitle" | "tags">>) => void;
   addReflection: (input: { date: string; type: Reflection["type"]; contentMd: string; sessionId?: string }) => void;
   addTask: (title: string, estPomodoros?: number) => void;
@@ -144,6 +173,7 @@ export const useData = create<DataStore>((set, get) => {
         localDate: date,
         tags: [],
         journalMd: "",
+        status: "draft",
         isBackfilled: date < localDateOf(),
         createdAt: now,
         updatedAt: now,
@@ -170,6 +200,7 @@ export const useData = create<DataStore>((set, get) => {
                 mood,
                 tags: [],
                 journalMd: "",
+                status: "draft" as JournalStatus,
                 isBackfilled: date < localDateOf(),
                 createdAt: now,
                 updatedAt: now,
@@ -193,6 +224,7 @@ export const useData = create<DataStore>((set, get) => {
                 localDate: date,
                 tags: [],
                 journalMd: "",
+                status: "draft" as JournalStatus,
                 isBackfilled: date < localDateOf(),
                 createdAt: now,
                 updatedAt: now,
@@ -200,6 +232,95 @@ export const useData = create<DataStore>((set, get) => {
               },
             ];
         const next = { ...core(state), dayEntries };
+        persist(next);
+        return next;
+      }),
+
+    setSessionMood: (id, mood) =>
+      set((state) => {
+        const next = {
+          ...core(state),
+          sessions: state.sessions.map((s) => (s.id === id ? { ...s, moodAfter: mood } : s)),
+        };
+        persist(next);
+        return next;
+      }),
+
+    removeSession: (id) =>
+      set((state) => {
+        const next = { ...core(state), sessions: state.sessions.filter((s) => s.id !== id) };
+        persist(next);
+        return next;
+      }),
+
+    putBackSession: (session) =>
+      set((state) => {
+        if (state.sessions.some((s) => s.id === session.id)) return state;
+        const next = { ...core(state), sessions: [session, ...state.sessions] };
+        persist(next);
+        return next;
+      }),
+
+    archiveJournal: (date) => {
+      get().ensureDay(date);
+      const now = Date.now();
+      set((state) => {
+        const next = {
+          ...core(state),
+          dayEntries: state.dayEntries.map((e) =>
+            e.localDate === date ? { ...e, status: "archived" as JournalStatus, archivedAt: now, updatedAt: now } : e,
+          ),
+        };
+        persist(next);
+        return next;
+      });
+    },
+
+    reopenJournal: (date) =>
+      set((state) => {
+        const now = Date.now();
+        const next = {
+          ...core(state),
+          dayEntries: state.dayEntries.map((e) =>
+            e.localDate === date ? { ...e, status: "draft" as JournalStatus, updatedAt: now } : e,
+          ),
+        };
+        persist(next);
+        return next;
+      }),
+
+    setJournalStatus: (date, status) => {
+      if (status === "archived") {
+        get().archiveJournal(date);
+        return;
+      }
+      get().reopenJournal(date);
+    },
+
+    removeDayEntry: (date) =>
+      set((state) => {
+        const next = { ...core(state), dayEntries: state.dayEntries.filter((e) => e.localDate !== date) };
+        persist(next);
+        return next;
+      }),
+
+    putBackDayEntry: (entry) =>
+      set((state) => {
+        if (state.dayEntries.some((e) => e.localDate === entry.localDate)) return state;
+        const next = { ...core(state), dayEntries: [...state.dayEntries, entry] };
+        persist(next);
+        return next;
+      }),
+
+    clearRange: (fromDate, toDate) =>
+      set((state) => {
+        const inRange = (date: string) => date >= fromDate && date <= toDate;
+        const next = {
+          ...core(state),
+          sessions: state.sessions.filter((s) => !inRange(s.localDate)),
+          dayEntries: state.dayEntries.filter((e) => !inRange(e.localDate)),
+          reflections: state.reflections.filter((r) => !inRange(r.localDate)),
+        };
         persist(next);
         return next;
       }),

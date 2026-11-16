@@ -1,7 +1,15 @@
 import { BarChart3, CalendarRange, HeartPulse, Tags } from "lucide-react";
 import AnimatedNumber from "@/shared/AnimatedNumber";
+import HappinessGauge from "@/features/happiness/HappinessGauge";
+import HappinessTrend from "@/features/happiness/HappinessTrend";
 import { useData } from "@/lib/store";
-import { focusSecondsOn, monthSummary, pomodorosOn } from "@/lib/selectors";
+import {
+  focusSecondsOn,
+  happinessAverage,
+  happinessLastDays,
+  monthSummary,
+  pomodorosOn,
+} from "@/lib/selectors";
 import { addDays, formatDuration, localDateOf } from "@/lib/utils";
 
 export default function StatsPage() {
@@ -12,6 +20,9 @@ export default function StatsPage() {
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13));
   const values = days.map((d) => focusSecondsOn({ sessions }, d));
   const max = Math.max(60, ...values);
+  const happinessPoints = happinessLastDays({ sessions, dayEntries }, 14);
+  const happinessAvg = happinessAverage({ sessions, dayEntries }, addDays(today, -13), today);
+  const happinessSamples = happinessPoints.reduce((acc, p) => acc + p.samples, 0);
 
   return (
     <div className="animate-in">
@@ -41,6 +52,21 @@ export default function StatsPage() {
           </div>
         </div>
       </div>
+
+      <section className="card mt-4 px-6 py-5">
+        <div className="mb-5 flex items-baseline justify-between">
+          <h2 className="text-[15px] font-semibold text-strong">开心度</h2>
+          <span className="text-[11px] text-muted">按每次专注的实际时长加权</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+          <HappinessGauge index={happinessAvg} samples={happinessSamples} size={150} />
+          <div className="min-w-[240px] flex-1">
+            <HappinessTrend points={happinessPoints} height={120} />
+            <div className="mt-2 text-[11px] text-muted">最近 14 天 · 空白处表示当天没有心情记录</div>
+          </div>
+        </div>
+      </section>
 
       <section className="card mt-4 px-6 py-5">
         <div className="mb-5 flex items-baseline justify-between">

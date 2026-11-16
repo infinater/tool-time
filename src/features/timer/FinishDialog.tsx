@@ -11,8 +11,10 @@ export default function FinishDialog() {
   const close = useTimer((s) => s.closeFinish);
   const startBreak = useTimer((s) => s.startBreak);
   const plannedSeconds = useTimer((s) => s.plannedSeconds);
+  const lastSessionId = useTimer((s) => s.lastSessionId);
   const settings = useData((s) => s.settings);
   const setMood = useData((s) => s.setMood);
+  const setSessionMood = useData((s) => s.setSessionMood);
   const addReflection = useData((s) => s.addReflection);
 
   const [mood, setMoodState] = useState<Mood | undefined>(undefined);
@@ -24,7 +26,13 @@ export default function FinishDialog() {
   const minutes = Math.round(plannedSeconds / 60);
 
   const save = (breakAfter: boolean) => {
-    if (mood) setMood(date, mood);
+    if (mood) {
+      // 本次专注的心情（开心度按每次样本加权）
+      if (lastSessionId) setSessionMood(lastSessionId, mood);
+      // 当日还没有整体心情时，顺手补一个，日历上立刻能看到
+      const entry = useData.getState().dayEntries.find((e) => e.localDate === date);
+      if (entry?.mood === undefined) setMood(date, mood);
+    }
     if (note.trim()) addReflection({ date, type: "quick", contentMd: note.trim() });
     setMoodState(undefined);
     setNote("");
