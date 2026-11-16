@@ -201,7 +201,7 @@ export default function App() {
             数据仅存本机
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-muted">v0.1.0</span>
+            <span className="text-[11px] text-muted">v{__APP_VERSION__}</span>
             <button
               className="btn-ghost px-1.5 py-1"
               title={theme === "dark" ? "切换到浅色" : "切换到深色"}

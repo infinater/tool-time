@@ -173,7 +173,7 @@ export default function SettingsPage() {
         </Section>
       </div>
 
-      <div className="py-10 text-center text-[11px] text-muted">番茄日历 v0.1.0 · 数据不出本机</div>
+      <div className="py-10 text-center text-[11px] text-muted">番茄日历 v{__APP_VERSION__} · 数据不出本机</div>
     </div>
   );
 }
