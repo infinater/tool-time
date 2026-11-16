@@ -25,5 +25,13 @@ data/
 Thumbs.db
 *.local
 
-# TypeScript 增量构建信息
+# TypeScript 澧為噺鏋勫缓淇℃伅
 *.tsbuildinfo
+
+# 鐜鍙橀噺涓庡瘑閽ワ紙褰撳墠椤圭洰涓嶄娇鐢ㄤ换浣曞瘑閽ワ紝棰勯槻鎬у拷鐣ワ級
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
