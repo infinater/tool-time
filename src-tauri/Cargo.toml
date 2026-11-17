@@ -1,6 +1,6 @@
 [package]
 name = "tool-time"
-version = "0.1.0"
+version = "0.2.0"
 license = "MIT"
 description = "番茄日历：专注、心情、日记"
 authors = ["infinater"]
