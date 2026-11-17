@@ -12,7 +12,33 @@ const KIND_LABEL: Record<string, string> = {
 
 const TICKS = Array.from({ length: 60 }, (_, i) => i);
 
-/** 刻度单独 memo：只有"已走过多少格"变化时才重建 DOM */
+/** 休息态固定青绿，不参与进度渐变 */
+const BREAK_COLOR = "#5aa9a0";
+
+/**
+ * 进度 p（0–1，空闲时为 0）→ 圆环主色。
+ * 纯函数，用 HSL 分段插值：色相 12° → 28° → 8° → 355°，饱和度 72% → 88%，亮度 60% → 48%。
+ * 最后一段把 355° 当作 -5° 走短弧，避免色相绕一整圈造成反向跳变。
+ */
+export function ringColor(p: number): string {
+  const t = Math.min(1, Math.max(0, Number.isFinite(p) ? p : 0));
+
+  let hue: number;
+  if (t <= 0.35) {
+    hue = 12 + ((28 - 12) * t) / 0.35;
+  } else if (t <= 0.7) {
+    hue = 28 + ((8 - 28) * (t - 0.35)) / 0.35;
+  } else {
+    hue = 8 + ((-5 - 8) * (t - 0.7)) / 0.3;
+  }
+  hue = ((hue % 360) + 360) % 360;
+
+  const saturation = 72 + (88 - 72) * t;
+  const lightness = 60 + (48 - 60) * t;
+  return `hsl(${hue.toFixed(1)}, ${saturation.toFixed(1)}%, ${lightness.toFixed(1)}%)`;
+}
+
+/** 刻度单独 memo：只有"已走过多少格"或颜色变化时才重建 DOM */
 const TickRing = memo(function TickRing({ done, color }: { done: number; color: string }) {
   return (
     <>
@@ -33,6 +59,7 @@ const TickRing = memo(function TickRing({ done, color }: { done: number; color: 
             strokeWidth={i % 5 === 0 ? 1.6 : 1}
             strokeLinecap="round"
             opacity={i < done ? 0.9 : 0.45}
+            style={{ transition: "stroke 1s linear" }}
           />
         );
       })}
@@ -46,9 +73,11 @@ interface Props {
   className?: string;
   /** 空闲时允许滚轮调整时长（±5 分钟） */
   wheelAdjustable?: boolean;
+  /** 是否渲染外发光：仅专注模式大表盘开启，今天页小表盘保持关闭 */
+  glow?: boolean;
 }
 
-export default function TimerDial({ px = 260, className, wheelAdjustable = false }: Props) {
+export default function TimerDial({ px = 260, className, wheelAdjustable = false, glow = false }: Props) {
   const status = useTimer((s) => s.status);
   const kind = useTimer((s) => s.kind);
   const plannedSeconds = useTimer((s) => s.plannedSeconds);
@@ -78,9 +107,13 @@ export default function TimerDial({ px = 260, className, wheelAdjustable = false
   }, [wheelAdjustable]);
 
   const total = plannedSeconds * 1000;
-  const progress = total > 0 ? Math.min(1, Math.max(0, 1 - left / total)) : 0;
+  // 已用比例：空闲时固定为 0，避免刚调完时长就出现一段进度
+  const elapsedRatio = total > 0 ? Math.min(1, Math.max(0, 1 - left / total)) : 0;
+  const progress = status === "idle" ? 0 : elapsedRatio;
   const isBreak = status !== "idle" && kind !== "work";
-  const accent = isBreak ? "#5aa9a0" : "var(--c-accent)";
+  // 进度弧、点亮刻度、光晕共用同一个主色
+  const color = isBreak ? BREAK_COLOR : ringColor(progress);
+  const glowOpacity = 0.18 + 0.5 * progress;
   const doneTicks = Math.round(progress * 60);
 
   const R_TRACK = 112;
@@ -96,20 +129,44 @@ export default function TimerDial({ px = 260, className, wheelAdjustable = false
     >
       <svg viewBox="0 0 260 260" className="h-full w-full -rotate-90">
         <circle cx="130" cy="130" r="124" fill="none" stroke="var(--c-line)" strokeWidth="1" opacity="0.7" />
-        <TickRing done={doneTicks} color={accent} />
+        <TickRing done={doneTicks} color={color} />
         <circle cx="130" cy="130" r={R_TRACK} fill="none" stroke="var(--c-raised)" strokeWidth="12" />
+
+        {/* 光晕：模糊的进度弧副本，强度随 p 增强；只有大表盘（glow）才渲染 */}
+        {glow && (
+          <circle
+            cx="130"
+            cy="130"
+            r={R_PROGRESS}
+            fill="none"
+            stroke={color}
+            strokeWidth={18}
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={C * (1 - progress)}
+            opacity={glowOpacity}
+            style={{
+              filter: "blur(10px)",
+              transition: "stroke 1s linear, filter 1s linear, opacity 1s linear",
+            }}
+          />
+        )}
+
         <circle
           cx="130"
           cy="130"
           r={R_PROGRESS}
           fill="none"
-          stroke={accent}
+          stroke={color}
           strokeWidth="12"
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - progress)}
           opacity={status === "paused" ? 0.4 : 1}
-          style={{ transition: "stroke-dashoffset 140ms linear, opacity 180ms ease-out" }}
+          style={{
+            transition:
+              "stroke-dashoffset 140ms linear, opacity 180ms ease-out, stroke 1s linear, filter 1s linear",
+          }}
         />
       </svg>
 

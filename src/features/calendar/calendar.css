@@ -1,0 +1,67 @@
+/* 日历模块动效：只动 opacity / transform，全部受 prefers-reduced-motion 控制 */
+
+/* 「正在专注」呼吸点：1.6s 循环，opacity 1 ↔ 0.35 */
+.calendar-pulse {
+  animation: calendar-pulse 1600ms ease-in-out infinite;
+}
+
+/* 暂停态：整体亮度减半（0.5 ↔ 0.175） */
+.calendar-pulse-paused {
+  animation: calendar-pulse-dim 1600ms ease-in-out infinite;
+}
+
+@keyframes calendar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes calendar-pulse-dim {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.175;
+  }
+}
+
+/* 悬停预览卡片：160ms ease-out，透明度 + 4px 位移 */
+.calendar-tooltip {
+  display: none;
+  animation: calendar-tooltip-in 160ms ease-out both;
+}
+
+/* 只在支持悬停的精确指针设备上出现，触屏 / 移动端不显示 */
+@media (hover: hover) and (pointer: fine) {
+  .calendar-tooltip {
+    display: block;
+  }
+}
+
+@keyframes calendar-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-pulse,
+  .calendar-pulse-paused,
+  .calendar-tooltip {
+    animation: none !important;
+  }
+  /* 不呼吸时保持一个可辨认的静态亮度 */
+  .calendar-pulse-paused {
+    opacity: 0.5;
+  }
+}

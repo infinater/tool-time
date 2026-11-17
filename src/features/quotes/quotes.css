@@ -1,0 +1,143 @@
+/* 名言轮播：所有选择器都带 quote-rotator 前缀，避免与全局 styles.css 冲突 */
+
+.quote-rotator {
+  --qr-font-size: 18px;
+  --qr-line-height: 1.72;
+  --qr-pad-y: 18px;
+  --qr-pad-x: 20px;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  padding: var(--qr-pad-y) var(--qr-pad-x) calc(var(--qr-pad-y) - 4px);
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-surface) 82%, transparent);
+  box-shadow: var(--shadow-card);
+  color: var(--c-ink);
+  text-align: left;
+}
+
+.quote-rotator--compact {
+  --qr-font-size: 15px;
+  --qr-pad-y: 12px;
+  --qr-pad-x: 14px;
+  gap: 7px;
+  border-radius: 12px;
+}
+
+/* 两层叠放在同一个 grid 单元：高度取两者最大值，下方内容不跳动 */
+.quote-rotator__stage {
+  display: grid;
+  min-height: calc(var(--qr-line-height) * 2em);
+  font-size: var(--qr-font-size);
+}
+
+.quote-rotator__slide {
+  grid-area: 1 / 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.quote-rotator__text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--qr-font-size);
+  line-height: var(--qr-line-height);
+  letter-spacing: 0.01em;
+  color: var(--c-strong);
+  text-wrap: pretty;
+}
+
+.quote-rotator__author {
+  align-self: flex-end;
+  min-height: 1.5em;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--c-sub);
+  font-size: 12.5px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quote-rotator--compact .quote-rotator__author {
+  font-size: 11.5px;
+}
+
+.quote-rotator__dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 8px;
+}
+
+.quote-rotator__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--c-raised);
+  transition:
+    width 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 400ms ease,
+    opacity 400ms ease;
+}
+
+.quote-rotator__dot--visited {
+  background: var(--c-muted);
+  opacity: 0.85;
+}
+
+.quote-rotator__dot--active {
+  width: 16px;
+  background: var(--c-accent);
+  opacity: 1;
+}
+
+@keyframes quote-rotator-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes quote-rotator-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.quote-rotator__slide--entering {
+  animation: quote-rotator-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.quote-rotator__slide--leaving {
+  pointer-events: none;
+  animation: quote-rotator-out 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 减少动效：不做位移与淡入，直接替换文本 */
+@media (prefers-reduced-motion: reduce) {
+  .quote-rotator__slide--entering,
+  .quote-rotator__slide--leaving {
+    animation: none;
+  }
+
+  .quote-rotator__dot {
+    transition: none;
+  }
+}
